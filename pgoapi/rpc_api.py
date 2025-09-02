@@ -35,7 +35,7 @@ import ctypes
 from importlib import import_module
 
 from google.protobuf import message
-from protobuf3_to_dict import protobuf_to_dict
+from protobuf_to_dict import protobuf_to_dict
 # from pycrypt import pycrypt
 from Crypto.Cipher import AES
 
