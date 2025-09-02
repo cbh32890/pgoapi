@@ -35,7 +35,7 @@ import ctypes
 from importlib import import_module
 
 from google.protobuf import message
-from protobuf_to_dict import protobuf_to_dict
+from protobuf3_to_dict import protobuf_to_dict
 from pycrypt import pycrypt
 
 from pgoapi.exceptions import AuthTokenExpiredException, BadRequestException, MalformedNianticResponseException, NianticIPBannedException, NianticOfflineException, NianticThrottlingException, NianticTimeoutException, NotLoggedInException, ServerApiEndpointRedirectException, UnexpectedResponseException
