@@ -36,7 +36,8 @@ from importlib import import_module
 
 from google.protobuf import message
 from protobuf3_to_dict import protobuf_to_dict
-from pycrypt import pycrypt
+# from pycrypt import pycrypt
+from Crypto.Cipher import AES
 
 from pgoapi.exceptions import AuthTokenExpiredException, BadRequestException, MalformedNianticResponseException, NianticIPBannedException, NianticOfflineException, NianticThrottlingException, NianticTimeoutException, NotLoggedInException, ServerApiEndpointRedirectException, UnexpectedResponseException
 from pgoapi.utilities import to_camel_case, get_time, get_format_time_diff
