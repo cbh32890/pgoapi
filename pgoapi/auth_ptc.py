@@ -39,6 +39,7 @@ from requests.exceptions import RequestException, Timeout, TooManyRedirects
 
 class AuthPtc(Auth):
     PTC_LOGIN_URL1 = 'https://access.pokemon.com/oauth2/auth?client_id=pokemon-go&redirect_uri=https://www.pokemongolive.com/dl?app=pokemongo%26dl_action=OPEN_LOGIN&response_type=code&state=ZrQ4gWPIi7V3GTiHYw7s6xLd&scope=openid+offline+email+dob+pokemon_go+member_id+username'
+    print(PTC_LOGIN_URL1)
     PTC_LOGIN_URL2 = 'https://sso.pokemon.com/sso/login?service=http%3A%2F%2Fsso.pokemon.com%2Fsso%2Foauth2.0%2FcallbackAuthorize'
     PTC_LOGIN_OAUTH = 'https://sso.pokemon.com/sso/oauth2.0/accessToken'
     PTC_LOGIN_CLIENT_SECRET = 'w8ScCUXJQc6kXKw8FiOhd8Fixzht18Dq3PEVkUCP5ZPxtgyWsbTvWHFLm2wNY0JR'
