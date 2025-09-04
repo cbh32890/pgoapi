@@ -38,9 +38,9 @@ from pgoapi.exceptions import AuthException, AuthTimeoutException, InvalidCreden
 from requests.exceptions import RequestException, Timeout, TooManyRedirects
 
 class AuthPtc(Auth):
-
+    print("I'm in auth_ptc")
     PTC_LOGIN_URL1 = 'https://sso.pokemon.com/sso/oauth2.0/authorize?client_id=mobile-app_pokemon-go&redirect_uri=https%3A%2F%2Fwww.nianticlabs.com%2Fpokemongo%2Ferror'
-    PTC_LOGIN_URL2 = 'https://sso.pokemon.com/sso/login?service=https%3A%2F%2Fsso.pokemon.com%2Fsso%2Foauth2.0%2FcallbackAuthorize'
+    PTC_LOGIN_URL2 = 'https://sso.pokemon.com/sso/login?service=http%3A%2F%2Fsso.pokemon.com%2Fsso%2Foauth2.0%2FcallbackAuthorize'
     PTC_LOGIN_OAUTH = 'https://sso.pokemon.com/sso/oauth2.0/accessToken'
     PTC_LOGIN_CLIENT_SECRET = 'w8ScCUXJQc6kXKw8FiOhd8Fixzht18Dq3PEVkUCP5ZPxtgyWsbTvWHFLm2wNY0JR'
 
@@ -48,13 +48,11 @@ class AuthPtc(Auth):
         Auth.__init__(self)
         self._auth_provider = 'ptc'
         self._session = requests.Session()
-        self._session.max_redirects = 50
+        self._session.max_redirects = 50  # Increase redirect limit
         self._session.headers = {
             'User-Agent': user_agent or 'pokemongo/1 CFNetwork/811.4.18 Darwin/16.5.0',
             'Host': 'sso.pokemon.com',
-            'X-Unity-Version': '5.5.1f1',
-            'Accept': '*/*',
-            'Connection': 'keep-alive'
+            'X-Unity-Version': '5.5.1f1'
         }
         self._username = username
         self._password = password
@@ -73,31 +71,17 @@ class AuthPtc(Auth):
         self._session.cookies.clear()
         now = get_time()
 
-        # Manual redirect handling to debug loop
-        current_url = self.PTC_LOGIN_URL1
-        redirect_count = 0
-        max_redirects = 50
-        while redirect_count < max_redirects:
-            try:
-                self.log.debug(f"Sending GET to {current_url} (Redirect {redirect_count + 1})")
-                r = self._session.get(current_url, timeout=self.timeout, allow_redirects=False)
-                self.log.debug(f"GET response: {r.status_code}, {r.text[:100]}...")
-                if r.status_code in (301, 302, 303, 307, 308):
-                    current_url = r.headers.get('Location')
-                    redirect_count += 1
-                    self.log.debug(f"Redirecting to {current_url}")
-                    continue
-                elif r.status_code == 200:
-                    break
-                else:
-                    self.log.error(f"Unexpected status code: {r.status_code}")
-                    raise AuthException(f"Unexpected status code: {r.status_code}")
-            except Timeout:
-                raise AuthTimeoutException('Auth GET timed out.')
-            except RequestException as e:
-                raise AuthException(f"Caught RequestException: {e}")
-        if redirect_count >= max_redirects:
-            raise AuthException(f"Too many redirects: Exceeded {max_redirects} redirects.")
+        try:
+            self.log.debug(f"Sending GET to {self.PTC_LOGIN_URL1}")
+            r = self._session.get(self.PTC_LOGIN_URL1, timeout=self.timeout, allow_redirects=True)
+            self.log.debug(f"GET response: {r.status_code}, {r.text[:100]}...")
+        except Timeout:
+            raise AuthTimeoutException('Auth GET timed out.')
+        except TooManyRedirects as e:
+            self.log.error(f"Too many redirects on GET: {e}")
+            raise AuthException(f"Too many redirects: {e}")
+        except RequestException as e:
+            raise AuthException(f"Caught RequestException: {e}")
 
         try:
             data = r.json()
