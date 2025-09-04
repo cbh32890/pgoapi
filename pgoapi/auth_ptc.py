@@ -39,7 +39,6 @@ from requests.exceptions import RequestException, Timeout, TooManyRedirects
 
 class AuthPtc(Auth):
     PTC_LOGIN_URL1 = 'https://access.pokemon.com/oauth2/auth?client_id=pokemon-go&redirect_uri=https://www.pokemongolive.com/dl?app=pokemongo%26dl_action=OPEN_LOGIN&response_type=code&state=ZrQ4gWPIi7V3GTiHYw7s6xLd&scope=openid+offline+email+dob+pokemon_go+member_id+username'
-    print(PTC_LOGIN_URL1)
     PTC_LOGIN_URL2 = 'https://sso.pokemon.com/sso/login?service=http%3A%2F%2Fsso.pokemon.com%2Fsso%2Foauth2.0%2FcallbackAuthorize'
     PTC_LOGIN_OAUTH = 'https://sso.pokemon.com/sso/oauth2.0/accessToken'
     PTC_LOGIN_CLIENT_SECRET = 'w8ScCUXJQc6kXKw8FiOhd8Fixzht18Dq3PEVkUCP5ZPxtgyWsbTvWHFLm2wNY0JR'
@@ -47,6 +46,7 @@ class AuthPtc(Auth):
     def __init__(self, username=None, password=None, user_agent=None, timeout=None):
         Auth.__init__(self)
         self._auth_provider = 'ptc'
+        print("I'm in auth_ptc")
         self._session = requests.Session()
         self._session.max_redirects = 50  # Increase redirect limit
         self._session.headers = {
@@ -72,7 +72,6 @@ class AuthPtc(Auth):
         now = get_time()
 
         try:
-            print("I'm in auth_ptc")
             self.log.debug(f"Sending GET to {self.PTC_LOGIN_URL1}")
             r = self._session.get(self.PTC_LOGIN_URL1, timeout=self.timeout, allow_redirects=True)
             self.log.debug(f"GET response: {r.status_code}, {r.text[:100]}...")
