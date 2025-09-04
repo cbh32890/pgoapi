@@ -26,9 +26,9 @@ Author: tjado <https://github.com/tejado>
 from __future__ import absolute_import
 
 from pgoapi.exceptions import PleaseInstallProtobufVersion3
-
-import pkg_resources
+from importlib.metadata import version, PackageNotFoundError
 import logging
+import urllib3
 
 __title__ = 'pgoapi'
 __version__ = '2.14.0'
@@ -39,12 +39,12 @@ __copyright__ = 'Copyright (c) 2016 tjado <https://github.com/tejado>'
 protobuf_exist = False
 protobuf_version = 0
 try:
-    protobuf_version = pkg_resources.get_distribution("protobuf").version
+    protobuf_version = version("protobuf")
     protobuf_exist = True
-except Exception:
+except PackageNotFoundError:
     pass
 
-if (not protobuf_exist) or (int(protobuf_version[:1]) < 3):
+if (not protobuf_exist) or (int(protobuf_version.split('.')[0]) < 3):
     raise PleaseInstallProtobufVersion3()
 
 from pgoapi.pgoapi import PGoApi
@@ -58,8 +58,5 @@ logging.getLogger("auth").addHandler(logging.NullHandler())
 logging.getLogger("auth_ptc").addHandler(logging.NullHandler())
 logging.getLogger("auth_google").addHandler(logging.NullHandler())
 
-try:
-    import requests.packages.urllib3
-    requests.packages.urllib3.disable_warnings()
-except Exception:
-    pass
+# Suppress urllib3 warnings (e.g., InsecureRequestWarning)
+urllib3.disable_warnings()

@@ -232,6 +232,9 @@ ENV/
 # sftp configuration file
 sftp-config.json
 
+#config directory
+/configs
+
 # Package control specific files
 Package Control.last-run
 Package Control.ca-list

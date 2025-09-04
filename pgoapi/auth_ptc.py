@@ -28,7 +28,6 @@ from future.standard_library import install_aliases
 install_aliases()
 
 import requests
-
 from urllib.parse import parse_qs, urlsplit
 from six import string_types
 
@@ -36,7 +35,7 @@ from pgoapi.auth import Auth
 from pgoapi.utilities import get_time
 from pgoapi.exceptions import AuthException, AuthTimeoutException, InvalidCredentialsException
 
-from requests.exceptions import RequestException, Timeout
+from requests.exceptions import RequestException, Timeout, TooManyRedirects
 
 class AuthPtc(Auth):
 
@@ -47,11 +46,14 @@ class AuthPtc(Auth):
 
     def __init__(self, username=None, password=None, user_agent=None, timeout=None):
         Auth.__init__(self)
-
         self._auth_provider = 'ptc'
-
-        self._session = requests.session()
-        self._session.headers = {'User-Agent': user_agent or 'pokemongo/1 CFNetwork/811.4.18 Darwin/16.5.0', 'Host': 'sso.pokemon.com', 'X-Unity-Version': '5.5.1f1'}
+        self._session = requests.Session()
+        self._session.max_redirects = 50  # Increase redirect limit
+        self._session.headers = {
+            'User-Agent': user_agent or 'pokemongo/1 CFNetwork/811.4.18 Darwin/16.5.0',
+            'Host': 'sso.pokemon.com',
+            'X-Unity-Version': '5.5.1f1'
+        }
         self._username = username
         self._password = password
         self.timeout = timeout or 15
@@ -70,11 +72,16 @@ class AuthPtc(Auth):
         now = get_time()
 
         try:
-            r = self._session.get(self.PTC_LOGIN_URL1, timeout=self.timeout)
+            self.log.debug(f"Sending GET to {self.PTC_LOGIN_URL1}")
+            r = self._session.get(self.PTC_LOGIN_URL1, timeout=self.timeout, allow_redirects=True)
+            self.log.debug(f"GET response: {r.status_code}, {r.text[:100]}...")
         except Timeout:
             raise AuthTimeoutException('Auth GET timed out.')
+        except TooManyRedirects as e:
+            self.log.error(f"Too many redirects on GET: {e}")
+            raise AuthException(f"Too many redirects: {e}")
         except RequestException as e:
-            raise AuthException('Caught RequestException: {}'.format(e))
+            raise AuthException(f"Caught RequestException: {e}")
 
         try:
             data = r.json()
@@ -84,21 +91,26 @@ class AuthPtc(Auth):
                 'password': self._password,
             })
         except (ValueError, AttributeError) as e:
-            self.log.error('PTC User Login Error - invalid JSON response: {}'.format(e))
-            raise AuthException('Invalid JSON response: {}'.format(e))
+            self.log.error(f"Invalid JSON response from GET: {e}")
+            raise AuthException(f"Invalid JSON response: {e}")
 
         try:
+            self.log.debug(f"Sending POST to {self.PTC_LOGIN_URL2}")
             r = self._session.post(self.PTC_LOGIN_URL2, data=data, timeout=self.timeout, allow_redirects=False)
+            self.log.debug(f"POST response: {r.status_code}, {r.text[:100]}...")
         except Timeout:
             raise AuthTimeoutException('Auth POST timed out.')
+        except TooManyRedirects as e:
+            self.log.error(f"Too many redirects on POST: {e}")
+            raise AuthException(f"Too many redirects: {e}")
         except RequestException as e:
-            raise AuthException('Caught RequestException: {}'.format(e))
+            raise AuthException(f"Caught RequestException: {e}")
 
         try:
             qs = parse_qs(urlsplit(r.headers['Location'])[3])
             self._refresh_token = qs.get('ticket')[0]
         except Exception as e:
-            raise AuthException('Could not retrieve token! {}'.format(e))
+            raise AuthException(f"Could not retrieve token: {e}")
 
         self._access_token = self._session.cookies.get('CASTGC')
         if self._access_token:
@@ -137,30 +149,28 @@ class AuthPtc(Auth):
             }
 
             try:
+                self.log.debug(f"Sending POST to {self.PTC_LOGIN_OAUTH}")
                 r = self._session.post(self.PTC_LOGIN_OAUTH, data=data, timeout=self.timeout)
+                self.log.debug(f"OAuth response: {r.status_code}, {r.text[:100]}...")
             except Timeout:
                 raise AuthTimeoutException('Auth POST timed out.')
+            except TooManyRedirects as e:
+                self.log.error(f"Too many redirects on OAuth POST: {e}")
+                raise AuthException(f"Too many redirects: {e}")
             except RequestException as e:
-                raise AuthException('Caught RequestException: {}'.format(e))
+                raise AuthException(f"Caught RequestException: {e}")
 
             token_data = parse_qs(r.text)
 
             access_token = token_data.get('access_token')
             if access_token is not None:
                 self._access_token = access_token[0]
-
-                # set expiration to an hour less than value received because Pokemon OAuth
-                # login servers return an access token with an explicit expiry time of
-                # three hours, however, the token stops being valid after two hours.
-                # See issue #86
                 expires = int(token_data.get('expires', [0])[0]) - 3600
                 if expires > 0:
                     self._access_token_expiry = expires + get_time()
                 else:
                     self._access_token_expiry = 0
-
                 self._login = True
-
                 self.log.info('PTC Access Token successfully retrieved.')
                 self.log.debug('PTC Access Token: {}'.format(self._access_token))
             else:
