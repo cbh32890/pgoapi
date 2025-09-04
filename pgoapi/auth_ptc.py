@@ -38,7 +38,7 @@ from pgoapi.exceptions import AuthException, AuthTimeoutException, InvalidCreden
 from requests.exceptions import RequestException, Timeout, TooManyRedirects
 
 class AuthPtc(Auth):
-
+    print("I'm in auth_ptc")
     PTC_LOGIN_URL1 = 'https://sso.pokemon.com/sso/oauth2.0/authorize?client_id=mobile-app_pokemon-go&redirect_uri=https%3A%2F%2Fwww.nianticlabs.com%2Fpokemongo%2Ferror'
     PTC_LOGIN_URL2 = 'https://sso.pokemon.com/sso/login?service=http%3A%2F%2Fsso.pokemon.com%2Fsso%2Foauth2.0%2FcallbackAuthorize'
     PTC_LOGIN_OAUTH = 'https://sso.pokemon.com/sso/oauth2.0/accessToken'
